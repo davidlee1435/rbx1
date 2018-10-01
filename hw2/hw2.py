@@ -1,20 +1,14 @@
 #!/usr/bin/env python
 import rospy
 from geometry_msgs.msg import Twist
-from sensor_msgs import LaserScan
-from math import pi
-
-class Bug2():
-import rospy
-from geometry_msgs.msg import Twist
 from math import pi
 import os
 import math 
 
-class OutAndBack():
+class Bug2():
     def __init__(self):
         # Give the node a name
-        rospy.init_node('out_and_back', anonymous=False)
+        rospy.init_node('bug2', anonymous=False)
 
         # Set rospy to execute a shutdown function when exiting       
         rospy.on_shutdown(self.shutdown)
@@ -37,7 +31,9 @@ class OutAndBack():
 	self.run_pathfinder()
 
     def run_pathfinder(self):
-	pass
+	while not rospy.is_shutdown():
+	     self.translate(1)
+	
 
     def rotate(self, angle_in_radians):
 	goal_angle = angle_in_radians * float(pi/180)
@@ -73,26 +69,6 @@ class OutAndBack():
             self.r.sleep()
         self.cmd_vel.publish(Twist())
             
-    def shutdown(self):
-        # Always stop the robot when shutting down the node.
-        rospy.loginfo("Stopping the robot...")
-        self.cmd_vel.publish(Twist())
-        rospy.sleep(1)
-
-    def run_pathfinder(self):
-	"""
-	Pseudocode
-	while self.not_reached(goal_point):
-	    if self.obstacle_detected():
-		store_hit_point()
-		while 
-	    else:
-		self.move_on_m_line()
-		
-	"""
-	pass
-
-
     def shutdown(self):
         # Always stop the robot when shutting down the node.
         rospy.loginfo("Stopping the robot...")
