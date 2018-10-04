@@ -14,11 +14,11 @@ class Bug2():
         self.cmd_vel = rospy.Publisher('/cmd_vel_mux/input/navi', Twist, queue_size=5)
         self.scan_sub = rospy.Subscriber('scan', LaserScan, self.scan_callback) 
 	# How fast will we update the robot's movement?
-        self.rate = 50
+        self.rate = 200
         
         # Set the equivalent ROS rate variable
         self.r = rospy.Rate(self.rate)
-        
+	self.r.sleep()        
         # Set the forward linear speed to 0.2 meters per second 
         self.linear_speed = 0.3
 	
@@ -28,8 +28,10 @@ class Bug2():
 	self.objects_center = 10000
 	self.objects_left = 10000
 	self.objects_right = 10000
-	self.nearness_ceiling = 0.7
-	self.nearness_floor= 0.5
+	self.front_nearness_ceiling = 0.7
+	self.front_nearness_floor= 0.5
+	self.right_nearness_ceiling = 0.7
+	self.right_nearness_floor = 0.5
 	self.translation_amount = 0.1
 	self.rotation_amount = 5
 	self.run_pathfinder()
@@ -58,11 +60,11 @@ class Bug2():
 			self.translate(self.translation_amount)
 	     
     def obstacle_in_front(self):
-	result = math.isnan(self.objects_center) == False and self.objects_center < self.nearness_ceiling and self.objects_center > self.nearness_floor
+	result = math.isnan(self.objects_center) == False and self.objects_center < self.front_nearness_ceiling and self.objects_center > self.front_nearness_floor
 	return result
 
     def obstacle_on_right(self):
-	result = math.isnan(self.objects_right) == False and self.objects_right < self.nearness_ceiling and self.objects_right > self.nearness_floor
+	result = math.isnan(self.objects_right) == False and self.objects_right < self.right_nearness_ceiling and self.objects_right > self.right_nearness_floor
 	return result
  
     def rotate(self, angle_in_degrees):
