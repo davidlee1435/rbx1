@@ -32,6 +32,7 @@ class Bug2():
 	self.front_nearness_floor= 0.5
 	self.right_nearness_ceiling = 0.7
 	self.right_nearness_floor = 0.5
+	self.closeness_threshold = 0.005
 	self.translation_amount = 0.1
 	self.rotation_amount = 5
 	self.run_pathfinder()
@@ -42,22 +43,35 @@ class Bug2():
 	while not rospy.is_shutdown():
 	    if not self.obstacle_in_front():
 	        self.translate(self.translation_amount)
-	        print("Object Distances: {} {} {}".format(self.objects_left, self.objects_center, self.objects_right))
    	    else:
 		# TODO: record the hit point
 		print("Hit obstacle")
-		while self.obstacle_in_front():
+		while not self.is_close_to_min_distance(self.objects_right):
 		    print("Rotate left")
 		    self.rotate(self.rotation_amount)
+		self.r.sleep()
+		self.rotate(30)
+		self.r.sleep()
 		# TODO: change this while loop to terminate when reaching hitpoint or destination
 		while True:
-		    if not self.obstacle_on_right():
+		    right_rotation_amount = 0
+		    while not self.is_close_to_min_distance(self.objects_right):
 			print("Rotate right")
-			self.rotate(-self.rotation_amount)
-		    else:
-			print("Rotate let and move")
-			self.rotate(self.rotation_amount)	
+			self.print_distances()
+			amount = -self.rotation_amount
+			self.rotate(amount)
+			right_rotation_amount += amount
+			if abs(right_rotation_amount) > 360:
+			    break
+			self.r.sleep()
+		    self.r.sleep()
+		    if abs(right_rotation_amount > 360):
+			self.rotate(10)
 			self.translate(self.translation_amount)
+		    else:
+		        print("Rotate let and move")
+		        self.rotate(10)	
+		        self.translate(self.translation_amount)
 	     
     def obstacle_in_front(self):
 	result = math.isnan(self.objects_center) == False and self.objects_center < self.front_nearness_ceiling and self.objects_center > self.front_nearness_floor
@@ -66,7 +80,10 @@ class Bug2():
     def obstacle_on_right(self):
 	result = math.isnan(self.objects_right) == False and self.objects_right < self.right_nearness_ceiling and self.objects_right > self.right_nearness_floor
 	return result
- 
+
+    def is_close_to_min_distance(self, distance):
+	return math.isnan(distance)==False and distance >= self.objects_min and distance < self.objects_min + self.closeness_threshold and distance < 1.5
+
     def rotate(self, angle_in_degrees):
 	goal_angle = angle_in_degrees * float(pi/180)
 	angular_duration = goal_angle / self.angular_speed
@@ -105,7 +122,10 @@ class Bug2():
 	self.objects_center = msg.ranges[len(msg.ranges)/2]
 	self.objects_left = msg.ranges[len(msg.ranges)-1]
 	self.objects_right = msg.ranges[0]
-	
+ 	self.objects_min = min(msg.ranges)
+
+    def print_distances(self):
+	print("Object Distances: {} {} {} {}".format(self.objects_left, self.objects_center, self.objects_right, self.objects_min))	
     def shutdown(self):
         # Always stop the robot when shutting down the node.
         rospy.loginfo("Stopping the robot...")
