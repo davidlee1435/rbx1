@@ -28,61 +28,65 @@ class Bug2():
 	self.objects_center = 10000
 	self.objects_left = 10000
 	self.objects_right = 10000
+
 	self.front_nearness_ceiling = 0.7
 	self.front_nearness_floor= 0.5
-	self.right_nearness_ceiling = 0.7
-	self.right_nearness_floor = 0.5
+
 	self.closeness_threshold = 0.005
+
 	self.translation_amount = 0.1
 	self.rotation_amount = 5
+	# Run main method
 	self.run_pathfinder()
 
     def run_pathfinder(self):
+	"""
+	High level overview of run_pathfinder:
+
+	1. Move forward until bug hits obstacle
+	2. When that happens, turn left until the right-most sensor barely registers. Rotate 30 degrees more to the left to account for the fact that the right most sensor is not 90 degrees from the center of the bug's viewpoint
+	3. The bug then moves right until the right sensor starts to register the object. The right sensor must be within some bound of the min value of all the values from LaserScan
+	4. After that happens, or until the bug has completed a full revolution, break out of the while loop, turn a bit left, and translate forward. The bug usually goes into a loop on corners
+	"""
 	print("Starting Pathfinder")
 	# TODO: orient the object towards the goal (aka find the m-line)
 	while not rospy.is_shutdown():
 	    if not self.obstacle_in_front():
 	        self.translate(self.translation_amount)
+
    	    else:
 		# TODO: record the hit point
-		print("Hit obstacle")
 		while not self.is_close_to_min_distance(self.objects_right):
-		    print("Rotate left")
 		    self.rotate(self.rotation_amount)
-		self.r.sleep()
+
 		self.rotate(30)
 		self.r.sleep()
 		# TODO: change this while loop to terminate when reaching hitpoint or destination
 		while True:
 		    right_rotation_amount = 0
 		    while not self.is_close_to_min_distance(self.objects_right):
-			print("Rotate right")
-			self.print_distances()
 			amount = -self.rotation_amount
 			self.rotate(amount)
 			right_rotation_amount += amount
+
 			if abs(right_rotation_amount) > 360:
+			    # Usually happens on corners
 			    break
+
 			self.r.sleep()
-		    self.r.sleep()
-		    if abs(right_rotation_amount > 360):
-			self.rotate(10)
-			self.translate(self.translation_amount)
-		    else:
-		        print("Rotate let and move")
-		        self.rotate(10)	
-		        self.translate(self.translation_amount)
-	     
+
+		    self.rotate(2*self.rotation_amount)
+		    self.translate(self.translation_amount)
+	
+     
     def obstacle_in_front(self):
 	result = math.isnan(self.objects_center) == False and self.objects_center < self.front_nearness_ceiling and self.objects_center > self.front_nearness_floor
 	return result
 
-    def obstacle_on_right(self):
-	result = math.isnan(self.objects_right) == False and self.objects_right < self.right_nearness_ceiling and self.objects_right > self.right_nearness_floor
-	return result
 
     def is_close_to_min_distance(self, distance):
 	return math.isnan(distance)==False and distance >= self.objects_min and distance < self.objects_min + self.closeness_threshold and distance < 1.5
+
 
     def rotate(self, angle_in_degrees):
 	goal_angle = angle_in_degrees * float(pi/180)
@@ -126,6 +130,7 @@ class Bug2():
 
     def print_distances(self):
 	print("Object Distances: {} {} {} {}".format(self.objects_left, self.objects_center, self.objects_right, self.objects_min))	
+
     def shutdown(self):
         # Always stop the robot when shutting down the node.
         rospy.loginfo("Stopping the robot...")
